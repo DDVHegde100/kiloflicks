@@ -11,6 +11,10 @@ void print_usage() {
     std::cout << "Usage:\n";
     std::cout << "  thousandflicks encode <input_image> <output_image> <message_file>\n";
     std::cout << "  thousandflicks decode <input_image>\n";
+    std::cout << "  thousandflicks capacity <input_image>\n";
+    std::cout << "  thousandflicks info <input_image>\n";
+    std::cout << "  thousandflicks help\n";
+    std::cout << "\nNotes:\n  - The message is stored with a 4-byte (32-bit) length header.\n  - Only 24-bit uncompressed BMP images are supported.\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -20,7 +24,35 @@ int main(int argc, char* argv[]) {
     }
     std::string command = argv[1];
 
-    if (command == "encode") {
+    if (command == "help") {
+        print_usage();
+        return 0;
+    } else if (command == "capacity") {
+        if (argc != 3) {
+            print_usage();
+            return 1;
+        }
+        try {
+            BMPImage img = load_bmp(argv[2]);
+            std::cout << "[OK] LSB capacity: " << lsb_capacity(img) << " bytes (excluding 4-byte header)\n";
+        } catch (const std::exception& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+            return 2;
+        }
+    } else if (command == "info") {
+        if (argc != 3) {
+            print_usage();
+            return 1;
+        }
+        try {
+            BMPImage img = load_bmp(argv[2]);
+            std::cout << "[OK] Image info: " << img.width << "x" << img.height << ", " << img.data.size() << " bytes data\n";
+            std::cout << "    LSB capacity: " << lsb_capacity(img) << " bytes (excluding 4-byte header)\n";
+        } catch (const std::exception& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+            return 2;
+        }
+    } else if (command == "encode") {
         if (argc != 5) {
             print_usage();
             return 1;
