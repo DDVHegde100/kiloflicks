@@ -11,7 +11,7 @@ void print_usage() {
     std::cout << "Usage:\n";
     std::cout << "  thousandflicks encode <input_image> <output_image> <message_file>\n";
     std::cout << "  thousandflicks encode-text <input_image> <output_image> <message_string>\n";
-    std::cout << "  thousandflicks decode <input_image>\n";
+    std::cout << "  thousandflicks decode <input_image> [output_message_file]\n";
     std::cout << "  thousandflicks capacity <input_image>\n";
     std::cout << "  thousandflicks info <input_image>\n";
     std::cout << "  thousandflicks help\n";
@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
             return 2;
         }
     } else if (command == "decode") {
-        if (argc != 3) {
+        if (argc != 3 && argc != 4) {
             print_usage();
             return 1;
         }
@@ -96,9 +96,20 @@ int main(int argc, char* argv[]) {
             BMPImage img = load_bmp(argv[2]);
             // Try to decode up to 8192 bytes (arbitrary, can be increased)
             auto message = lsb_decode(img, 8192);
-            std::cout << "[OK] Decoded message (raw):\n";
-            std::cout.write(reinterpret_cast<const char*>(message.data()), message.size());
-            std::cout << std::endl;
+            if (message.empty()) {
+                std::cerr << "Error: No message found or header invalid." << std::endl;
+                return 3;
+            }
+            if (argc == 4) {
+                std::ofstream out(argv[3], std::ios::binary);
+                if (!out) throw std::runtime_error("Cannot open output file");
+                out.write(reinterpret_cast<const char*>(message.data()), message.size());
+                std::cout << "[OK] Decoded message written to file: " << argv[3] << "\n";
+            } else {
+                std::cout << "[OK] Decoded message (raw):\n";
+                std::cout.write(reinterpret_cast<const char*>(message.data()), message.size());
+                std::cout << std::endl;
+            }
         } catch (const std::exception& e) {
             std::cerr << "Error: " << e.what() << std::endl;
             return 2;
