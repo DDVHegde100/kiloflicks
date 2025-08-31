@@ -120,7 +120,16 @@ int main(int argc, char* argv[]) {
                     auto encoded = hamming74_encode(message);
                     lsb_encode(img, encoded);
                     write_bmp(argv[3], img);
+                    size_t img_bytes = img.data.size();
+                    size_t orig_bytes = message.size();
+                    size_t payload_bytes = encoded.size();
+                    size_t cap = lsb_capacity(img);
+                    double percent = cap ? (100.0 * payload_bytes / cap) : 0.0;
+                    double overhead = orig_bytes ? (100.0 * (payload_bytes - orig_bytes) / orig_bytes) : 0.0;
                     std::cout << "[OK] Text message encoded (Hamming(7,4)) and image saved: " << argv[3] << "\n";
+                    std::cout << "[STATS] Original message: " << orig_bytes << " bytes, Encoded payload: " << payload_bytes << " bytes\n";
+                    std::cout << "[STATS] Hamming(7,4) overhead: " << overhead << "%\n";
+                    std::cout << "[STATS] Image size: " << img_bytes << " bytes, Capacity used: " << percent << "%\n";
                 } catch (const std::exception& e) {
                     std::cerr << "[ERROR] " << e.what() << std::endl;
                     return 2;
@@ -142,7 +151,16 @@ int main(int argc, char* argv[]) {
                     auto encoded = hamming74_encode(message);
                     lsb_encode(img, encoded);
                     write_bmp(argv[3], img);
+                    size_t img_bytes = img.data.size();
+                    size_t orig_bytes = message.size();
+                    size_t payload_bytes = encoded.size();
+                    size_t cap = lsb_capacity(img);
+                    double percent = cap ? (100.0 * payload_bytes / cap) : 0.0;
+                    double overhead = orig_bytes ? (100.0 * (payload_bytes - orig_bytes) / orig_bytes) : 0.0;
                     std::cout << "[OK] Message encoded (Hamming(7,4)) and image saved: " << argv[3] << "\n";
+                    std::cout << "[STATS] Original message: " << orig_bytes << " bytes, Encoded payload: " << payload_bytes << " bytes\n";
+                    std::cout << "[STATS] Hamming(7,4) overhead: " << overhead << "%\n";
+                    std::cout << "[STATS] Image size: " << img_bytes << " bytes, Capacity used: " << percent << "%\n";
                 } catch (const std::exception& e) {
                     std::cerr << "[ERROR] " << e.what() << std::endl;
                     return 2;
