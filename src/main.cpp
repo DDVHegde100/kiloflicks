@@ -33,6 +33,10 @@ int main(int argc, char* argv[]) {
         try {
             BMPImage img = load_bmp(argv[2]);
             std::string msgstr = argv[4];
+            if (msgstr.empty()) {
+                std::cerr << "[WARN] Empty message, encoding default: 'hi'\n";
+                msgstr = "hi";
+            }
             std::vector<uint8_t> message(msgstr.begin(), msgstr.end());
             lsb_encode(img, message);
             write_bmp(argv[3], img);
@@ -41,7 +45,27 @@ int main(int argc, char* argv[]) {
             std::cerr << "Error: " << e.what() << std::endl;
             return 2;
         }
-    } else if (command == "help") {
+    } else if (command == "encode") {
+        if (argc != 5) {
+            print_usage();
+            return 1;
+        }
+        try {
+            BMPImage img = load_bmp(argv[2]);
+            std::ifstream msgfile(argv[4], std::ios::binary);
+            if (!msgfile) throw std::runtime_error("Cannot open message file");
+            std::vector<uint8_t> message((std::istreambuf_iterator<char>(msgfile)), std::istreambuf_iterator<char>());
+            if (message.empty()) {
+                std::cerr << "[WARN] Empty message file, encoding default: 'hi'\n";
+                message = {'h','i'};
+            }
+            lsb_encode(img, message);
+            write_bmp(argv[3], img);
+            std::cout << "[OK] Message encoded and image saved.\n";
+        } catch (const std::exception& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+            return 2;
+        }
         print_usage();
         return 0;
     } else if (command == "capacity") {

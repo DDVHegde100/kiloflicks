@@ -1,21 +1,40 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "build-thousandflicks",
-            "type": "shell",
-            "command": "g++",
-            "args": [
-                "-std=c++17",
-                "-o",
-                "thousandflicks",
-                "src/main.cpp"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": ["$gcc"]
-        }
-    ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build-thousandflicks",
+			"type": "shell",
+			"command": "g++",
+			"args": [
+				"-std=c++17",
+				"-o",
+				"thousandflicks",
+				"src/main.cpp"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			]
+		},
+		{
+			"label": "build-thousandflicks",
+			"type": "shell",
+			"command": "g++",
+			"args": [
+				"-std=c++17",
+				"-o",
+				"thousandflicks",
+				"src/main.cpp",
+				"src/bmp.cpp",
+				"src/lsb.cpp"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		}
+	]
 }
