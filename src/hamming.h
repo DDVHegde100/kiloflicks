@@ -3,8 +3,8 @@ uint8_t hamming74_decode_codeword(uint8_t codeword, bool& had_error);
 // hamming.h
 // Hamming(7,4) encode/decode for error correction
 #pragma once
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 // Encodes 4-bit nibbles into 7-bit Hamming codewords
 std::vector<uint8_t> hamming74_encode(const std::vector<uint8_t>& data);

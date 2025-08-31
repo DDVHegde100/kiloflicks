@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "test-hamming74",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-std=c++17",
+                "-o",
+                "test_hamming",
+                "test_hamming.cpp",
+                "src/hamming.cpp"
+            ],
+            "group": "test",
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}
