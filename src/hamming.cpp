@@ -28,7 +28,7 @@ std::vector<uint8_t> hamming74_encode(const std::vector<uint8_t>& data) {
 }
 
 // Helper: decode a single 7-bit codeword to 4 bits, correct single-bit errors
-static uint8_t hamming74_decode_codeword(uint8_t codeword, bool& had_error) {
+uint8_t hamming74_decode_codeword(uint8_t codeword, bool& had_error) {
     // Extract bits
     uint8_t p0 = (codeword >> 6) & 1;
     uint8_t p1 = (codeword >> 5) & 1;

@@ -173,8 +173,27 @@ int main(int argc, char* argv[]) {
                 try {
                     BMPImage img = load_bmp(argv[2]);
                     auto encoded = lsb_decode(img, 8192 * 2); // 2x for Hamming(7,4)
-                    bool had_error = false;
-                    auto message = hamming74_decode(encoded, had_error);
+                    // ECC decode with error count
+                    int corrected = 0, uncorrectable = 0;
+                    std::vector<uint8_t> message;
+                    if (encoded.size() % 2 != 0) {
+                        std::cerr << "[ERROR] Corrupted payload: codeword length must be even." << std::endl;
+                        return 3;
+                    }
+                    for (size_t i = 0; i + 1 < encoded.size(); i += 2) {
+                        bool had_error1 = false, had_error2 = false;
+                        uint8_t hi = 0, lo = 0;
+                        try {
+                            hi = hamming74_decode_codeword(encoded[i], had_error1);
+                            lo = hamming74_decode_codeword(encoded[i+1], had_error2);
+                        } catch (...) {
+                            ++uncorrectable;
+                            continue;
+                        }
+                        if (had_error1) ++corrected;
+                        if (had_error2) ++corrected;
+                        message.push_back((hi << 4) | lo);
+                    }
                     if (message.empty()) {
                         std::cerr << "[ERROR] No message found or header invalid." << std::endl;
                         return 3;
@@ -183,12 +202,13 @@ int main(int argc, char* argv[]) {
                         std::ofstream out(argv[3], std::ios::binary);
                         if (!out) throw std::runtime_error("Cannot open output file: " + std::string(argv[3]));
                         out.write(reinterpret_cast<const char*>(message.data()), message.size());
-                        std::cout << "[OK] Decoded message written to file: " << argv[3] << (had_error ? " (with error correction)\n" : "\n");
+                        std::cout << "[OK] Decoded message written to file: " << argv[3] << "\n";
                     } else {
                         std::cout << "[OK] Decoded message (raw):\n";
                         std::cout.write(reinterpret_cast<const char*>(message.data()), message.size());
-                        std::cout << (had_error ? "\n[INFO] Error correction was applied.\n" : "\n");
+                        std::cout << std::endl;
                     }
+                    std::cout << "[ECC] Hamming(7,4): " << corrected << " codewords corrected, " << uncorrectable << " uncorrectable.\n";
                 } catch (const std::exception& e) {
                     std::cerr << "[ERROR] " << e.what() << std::endl;
                     return 2;
