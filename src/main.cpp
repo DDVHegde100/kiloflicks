@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 #include "bmp.h"
+#include "lsb.h"
+#include <fstream>
 
 void print_usage() {
     std::cout << "Usage:\n";
@@ -25,9 +27,13 @@ int main(int argc, char* argv[]) {
         }
         try {
             BMPImage img = load_bmp(argv[2]);
-            // TODO: Encode message from argv[4] into img.data
+            // Read message file
+            std::ifstream msgfile(argv[4], std::ios::binary);
+            if (!msgfile) throw std::runtime_error("Cannot open message file");
+            std::vector<uint8_t> message((std::istreambuf_iterator<char>(msgfile)), std::istreambuf_iterator<char>());
+            lsb_encode(img, message);
             write_bmp(argv[3], img);
-            std::cout << "[OK] Image loaded and saved (no encoding yet).\n";
+            std::cout << "[OK] Message encoded and image saved.\n";
         } catch (const std::exception& e) {
             std::cerr << "Error: " << e.what() << std::endl;
             return 2;
@@ -39,8 +45,11 @@ int main(int argc, char* argv[]) {
         }
         try {
             BMPImage img = load_bmp(argv[2]);
-            // TODO: Decode message from img.data
-            std::cout << "[OK] Image loaded (no decoding yet).\n";
+            // Try to decode up to 8192 bytes (arbitrary, can be increased)
+            auto message = lsb_decode(img, 8192);
+            std::cout << "[OK] Decoded message (raw):\n";
+            std::cout.write(reinterpret_cast<const char*>(message.data()), message.size());
+            std::cout << std::endl;
         } catch (const std::exception& e) {
             std::cerr << "Error: " << e.what() << std::endl;
             return 2;
