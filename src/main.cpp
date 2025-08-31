@@ -10,6 +10,7 @@
 void print_usage() {
     std::cout << "Usage:\n";
     std::cout << "  thousandflicks encode <input_image> <output_image> <message_file>\n";
+    std::cout << "  thousandflicks encode-text <input_image> <output_image> <message_string>\n";
     std::cout << "  thousandflicks decode <input_image>\n";
     std::cout << "  thousandflicks capacity <input_image>\n";
     std::cout << "  thousandflicks info <input_image>\n";
@@ -24,7 +25,23 @@ int main(int argc, char* argv[]) {
     }
     std::string command = argv[1];
 
-    if (command == "help") {
+    if (command == "encode-text") {
+        if (argc != 5) {
+            print_usage();
+            return 1;
+        }
+        try {
+            BMPImage img = load_bmp(argv[2]);
+            std::string msgstr = argv[4];
+            std::vector<uint8_t> message(msgstr.begin(), msgstr.end());
+            lsb_encode(img, message);
+            write_bmp(argv[3], img);
+            std::cout << "[OK] Text message encoded and image saved.\n";
+        } catch (const std::exception& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+            return 2;
+        }
+    } else if (command == "help") {
         print_usage();
         return 0;
     } else if (command == "capacity") {

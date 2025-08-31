@@ -1,6 +1,6 @@
 # Thousand Flicks
 
-They say a picture is worth a 1000 words, well now that is actually true. Thousandflicks is a C++ command-line tool to encode and decode up to 1000 words into images using mathematical image manipulation (not metadata). 
+They say a picture is worth a 1000 words, well now that is actually true. Thousandflicks is a A C++ command-line tool to encode and decode up to 1000 words into images using mathematical image manipulation (not metadata). 
 
 ## Usage
 
