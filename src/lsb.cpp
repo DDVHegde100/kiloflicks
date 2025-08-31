@@ -4,10 +4,15 @@
 #include <stdexcept>
 #include <cstring>
 
+size_t lsb_capacity(const BMPImage& img) {
+    if (img.data.size() < 32) return 0;
+    return (img.data.size() - 32) / 8;
+}
+
 void lsb_encode(BMPImage& img, const std::vector<uint8_t>& message) {
-    size_t total_bits = message.size() * 8;
-    if (total_bits + 32 > img.data.size()) // 32 bits for length
-        throw std::runtime_error("Image too small for message");
+    size_t cap = lsb_capacity(img);
+    if (message.size() > cap)
+        throw std::runtime_error("Message too large for image (capacity: " + std::to_string(cap) + " bytes)");
     // Write message length (in bytes) as first 32 bits (big-endian)
     for (int i = 0; i < 32; ++i) {
         img.data[i] = (img.data[i] & 0xFE) | ((message.size() >> (31 - i)) & 1);
