@@ -1,3 +1,4 @@
+#include "prng_permute.h"
 #include "hamming.h"
 // main.cpp
 
@@ -12,9 +13,9 @@
 
 void print_usage() {
     std::cout << "Usage:\n";
-    std::cout << "  thousandflicks encode <input_image> <output_image> <message_file>\n";
-    std::cout << "  thousandflicks encode-text <input_image> <output_image> <message_string>\n";
-    std::cout << "  thousandflicks decode <input_image> [output_message_file]\n";
+    std::cout << "  thousandflicks encode <input_image> <output_image> <message_file> [--passphrase <pass>]\n";
+    std::cout << "  thousandflicks encode-text <input_image> <output_image> <message_string> [--passphrase <pass>]\n";
+    std::cout << "  thousandflicks decode <input_image> [output_message_file] [--passphrase <pass>]\n";
     std::cout << "  thousandflicks capacity <input_image>\n";
     std::cout << "  thousandflicks info <input_image>\n";
     std::cout << "  thousandflicks help\n";
@@ -105,8 +106,11 @@ int main(int argc, char* argv[]) {
         try {
             BMPImage img = load_bmp(argv[2]);
             if (command == "encode-text") {
-                if (argc != 5) {
-                    std::cerr << "[ERROR] Usage: thousandflicks encode-text <input_image> <output_image> <message_string>\n";
+                std::string passphrase;
+                int expected = 5;
+                if (argc == 7 && std::string(argv[5]) == "--passphrase") passphrase = argv[6];
+                else if (argc != 5) {
+                    std::cerr << "[ERROR] Usage: thousandflicks encode-text <input_image> <output_image> <message_string> [--passphrase <pass>]\n";
                     return 1;
                 }
                 try {
@@ -118,7 +122,21 @@ int main(int argc, char* argv[]) {
                     }
                     std::vector<uint8_t> message(msgstr.begin(), msgstr.end());
                     auto encoded = hamming74_encode(message);
+                    // Permute channel order if passphrase is given
+                    if (!passphrase.empty()) {
+                        auto perm = prng_permutation(img.data.size(), passphrase);
+                        std::vector<uint8_t> permuted(img.data.size());
+                        for (size_t i = 0; i < img.data.size(); ++i) permuted[perm[i]] = img.data[i];
+                        img.data.swap(permuted);
+                    }
                     lsb_encode(img, encoded);
+                    if (!passphrase.empty()) {
+                        // Reverse permutation for output
+                        auto perm = prng_permutation(img.data.size(), passphrase);
+                        std::vector<uint8_t> unpermuted(img.data.size());
+                        for (size_t i = 0; i < img.data.size(); ++i) unpermuted[i] = img.data[perm[i]];
+                        img.data.swap(unpermuted);
+                    }
                     write_bmp(argv[3], img);
                     size_t img_bytes = img.data.size();
                     size_t orig_bytes = message.size();
@@ -135,8 +153,11 @@ int main(int argc, char* argv[]) {
                     return 2;
                 }
             } else if (command == "encode") {
-                if (argc != 5) {
-                    std::cerr << "[ERROR] Usage: thousandflicks encode <input_image> <output_image> <message_file>\n";
+                std::string passphrase;
+                int expected = 5;
+                if (argc == 7 && std::string(argv[5]) == "--passphrase") passphrase = argv[6];
+                else if (argc != 5) {
+                    std::cerr << "[ERROR] Usage: thousandflicks encode <input_image> <output_image> <message_file> [--passphrase <pass>]\n";
                     return 1;
                 }
                 try {
@@ -149,7 +170,19 @@ int main(int argc, char* argv[]) {
                         message = {'h','i'};
                     }
                     auto encoded = hamming74_encode(message);
+                    if (!passphrase.empty()) {
+                        auto perm = prng_permutation(img.data.size(), passphrase);
+                        std::vector<uint8_t> permuted(img.data.size());
+                        for (size_t i = 0; i < img.data.size(); ++i) permuted[perm[i]] = img.data[i];
+                        img.data.swap(permuted);
+                    }
                     lsb_encode(img, encoded);
+                    if (!passphrase.empty()) {
+                        auto perm = prng_permutation(img.data.size(), passphrase);
+                        std::vector<uint8_t> unpermuted(img.data.size());
+                        for (size_t i = 0; i < img.data.size(); ++i) unpermuted[i] = img.data[perm[i]];
+                        img.data.swap(unpermuted);
+                    }
                     write_bmp(argv[3], img);
                     size_t img_bytes = img.data.size();
                     size_t orig_bytes = message.size();
@@ -166,14 +199,23 @@ int main(int argc, char* argv[]) {
                     return 2;
                 }
             } else if (command == "decode") {
-                if (argc != 3 && argc != 4) {
-                    std::cerr << "[ERROR] Usage: thousandflicks decode <input_image> [output_message_file]\n";
+                std::string passphrase;
+                int expected = 3;
+                if ((argc == 5 && std::string(argv[3]) == "--passphrase") || (argc == 6 && std::string(argv[4]) == "--passphrase")) {
+                    passphrase = argc == 5 ? argv[4] : argv[5];
+                } else if (argc != 3 && argc != 4) {
+                    std::cerr << "[ERROR] Usage: thousandflicks decode <input_image> [output_message_file] [--passphrase <pass>]\n";
                     return 1;
                 }
                 try {
                     BMPImage img = load_bmp(argv[2]);
+                    if (!passphrase.empty()) {
+                        auto perm = prng_permutation(img.data.size(), passphrase);
+                        std::vector<uint8_t> permuted(img.data.size());
+                        for (size_t i = 0; i < img.data.size(); ++i) permuted[i] = img.data[perm[i]];
+                        img.data.swap(permuted);
+                    }
                     auto encoded = lsb_decode(img, 8192 * 2); // 2x for Hamming(7,4)
-                    // ECC decode with error count
                     int corrected = 0, uncorrectable = 0;
                     std::vector<uint8_t> message;
                     if (encoded.size() % 2 != 0) {
@@ -198,11 +240,12 @@ int main(int argc, char* argv[]) {
                         std::cerr << "[ERROR] No message found or header invalid." << std::endl;
                         return 3;
                     }
-                    if (argc == 4) {
-                        std::ofstream out(argv[3], std::ios::binary);
-                        if (!out) throw std::runtime_error("Cannot open output file: " + std::string(argv[3]));
+                    if ((argc == 4 && std::string(argv[3]) != "--passphrase") || argc == 5) {
+                        std::string outpath = (argc == 4 ? argv[3] : argv[3]);
+                        std::ofstream out(outpath, std::ios::binary);
+                        if (!out) throw std::runtime_error("Cannot open output file: " + outpath);
                         out.write(reinterpret_cast<const char*>(message.data()), message.size());
-                        std::cout << "[OK] Decoded message written to file: " << argv[3] << "\n";
+                        std::cout << "[OK] Decoded message written to file: " << outpath << "\n";
                     } else {
                         std::cout << "[OK] Decoded message (raw):\n";
                         std::cout.write(reinterpret_cast<const char*>(message.data()), message.size());
