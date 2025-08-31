@@ -1,3 +1,4 @@
+#include "hamming.h"
 // main.cpp
 
 // Thousand Flicks CLI with BMP support
@@ -116,9 +117,10 @@ int main(int argc, char* argv[]) {
                         msgstr = "hi";
                     }
                     std::vector<uint8_t> message(msgstr.begin(), msgstr.end());
-                    lsb_encode(img, message);
+                    auto encoded = hamming74_encode(message);
+                    lsb_encode(img, encoded);
                     write_bmp(argv[3], img);
-                    std::cout << "[OK] Text message encoded and image saved: " << argv[3] << "\n";
+                    std::cout << "[OK] Text message encoded (Hamming(7,4)) and image saved: " << argv[3] << "\n";
                 } catch (const std::exception& e) {
                     std::cerr << "[ERROR] " << e.what() << std::endl;
                     return 2;
@@ -137,9 +139,10 @@ int main(int argc, char* argv[]) {
                         std::cerr << "[WARN] Empty message file, encoding default: 'hi'\n";
                         message = {'h','i'};
                     }
-                    lsb_encode(img, message);
+                    auto encoded = hamming74_encode(message);
+                    lsb_encode(img, encoded);
                     write_bmp(argv[3], img);
-                    std::cout << "[OK] Message encoded and image saved: " << argv[3] << "\n";
+                    std::cout << "[OK] Message encoded (Hamming(7,4)) and image saved: " << argv[3] << "\n";
                 } catch (const std::exception& e) {
                     std::cerr << "[ERROR] " << e.what() << std::endl;
                     return 2;
@@ -151,7 +154,9 @@ int main(int argc, char* argv[]) {
                 }
                 try {
                     BMPImage img = load_bmp(argv[2]);
-                    auto message = lsb_decode(img, 8192);
+                    auto encoded = lsb_decode(img, 8192 * 2); // 2x for Hamming(7,4)
+                    bool had_error = false;
+                    auto message = hamming74_decode(encoded, had_error);
                     if (message.empty()) {
                         std::cerr << "[ERROR] No message found or header invalid." << std::endl;
                         return 3;
@@ -160,11 +165,11 @@ int main(int argc, char* argv[]) {
                         std::ofstream out(argv[3], std::ios::binary);
                         if (!out) throw std::runtime_error("Cannot open output file: " + std::string(argv[3]));
                         out.write(reinterpret_cast<const char*>(message.data()), message.size());
-                        std::cout << "[OK] Decoded message written to file: " << argv[3] << "\n";
+                        std::cout << "[OK] Decoded message written to file: " << argv[3] << (had_error ? " (with error correction)\n" : "\n");
                     } else {
                         std::cout << "[OK] Decoded message (raw):\n";
                         std::cout.write(reinterpret_cast<const char*>(message.data()), message.size());
-                        std::cout << std::endl;
+                        std::cout << (had_error ? "\n[INFO] Error correction was applied.\n" : "\n");
                     }
                 } catch (const std::exception& e) {
                     std::cerr << "[ERROR] " << e.what() << std::endl;
