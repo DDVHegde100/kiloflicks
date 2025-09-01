@@ -7,30 +7,67 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <iomanip>
+
+void print_banner() {
+    std::cout << "\n";
+    std::cout << "╔══════════════════════════════════════════════════════════════╗\n";
+    std::cout << "║                      THOUSAND FLICKS                         ║\n";
+    std::cout << "║              Advanced Steganography Toolkit                  ║\n";
+    std::cout << "║          Hide up to 1000 words in BMP images securely        ║\n";
+    std::cout << "╚══════════════════════════════════════════════════════════════╝\n";
+    std::cout << "\n";
+}
 
 void print_usage() {
-    std::cout << "Thousand Flicks - Steganography Tool\n";
-    std::cout << "Usage:\n";
-    std::cout << "  thousandflicks decode <input_image> <output_file> [--passphrase <pass>]\n";
-    std::cout << "  thousandflicks encode-text <input_image> <output_image> <message_string> [--passphrase <pass>]\n";
-    std::cout << "  thousandflicks encode <input_image> <output_image> <message_file> [--passphrase <pass>]\n";
-    std::cout << "  thousandflicks capacity <input_image>\n";
-    std::cout << "  thousandflicks info <input_image>\n";
-    std::cout << "  thousandflicks help\n";
-    std::cout << "\nFeatures:\n";
-    std::cout << "  - Hamming(7,4) error correction for data integrity\n";
-    std::cout << "  - Optional passphrase-based PRNG permutation for security\n";
-    std::cout << "  - Statistics and recovery logging\n";
+    print_banner();
+    std::cout << "🔧 COMMAND LINE USAGE:\n";
+    std::cout << "═══════════════════════\n\n";
+    
+    std::cout << "📝 ENCODING:\n";
+    std::cout << "  ./thousandflicks encode-text <input.bmp> <output.bmp> \"<message>\" [--passphrase <pass>]\n";
+    std::cout << "  ./thousandflicks encode <input.bmp> <output.bmp> <message_file> [--passphrase <pass>]\n\n";
+    
+    std::cout << "🔍 DECODING:\n";
+    std::cout << "  ./thousandflicks decode <encoded.bmp> [output_file] [--passphrase <pass>]\n\n";
+    
+    std::cout << "📊 ANALYSIS:\n";
+    std::cout << "  ./thousandflicks capacity <image.bmp>    # Check how much data can be hidden\n";
+    std::cout << "  ./thousandflicks info <image.bmp>        # Show image information\n";
+    std::cout << "  ./thousandflicks help                    # Show this help\n\n";
+    
+    std::cout << "🚀 GUI MODE:\n";
+    std::cout << "  ./thousandflicks                         # Launch without arguments for GUI\n";
+    std::cout << "  python3 gui_app.py                      # Advanced GUI interface\n\n";
+    
+    std::cout << "🛡️ SECURITY FEATURES:\n";
+    std::cout << "  ✓ Hamming(7,4) error correction for data integrity\n";
+    std::cout << "  ✓ Passphrase-based PRNG permutation for obfuscation\n";
+    std::cout << "  ✓ LSB steganography with capacity management\n";
+    std::cout << "  ✓ Corruption detection and recovery logging\n\n";
+    
+    std::cout << "📝 EXAMPLES:\n";
+    std::cout << "  ./thousandflicks encode-text input.bmp secret.bmp \"Hello World!\"\n";
+    std::cout << "  ./thousandflicks encode input.bmp secret.bmp message.txt --passphrase \"mykey\"\n";
+    std::cout << "  ./thousandflicks decode secret.bmp decoded.txt\n";
+    std::cout << "  ./thousandflicks capacity input.bmp\n\n";
 }
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        // No arguments - try to run Python GUI
-        std::cout << "[INFO] No arguments provided, launching image upload GUI...\n";
-        int result = std::system("python3 image_upload.py");
+        // No arguments - try to run advanced GUI first, then fallback
+        std::cout << "🚀 Launching Thousand Flicks GUI...\n";
+        std::cout << "   (If GUI fails, command-line usage will be shown)\n\n";
+        
+        // Try advanced GUI first
+        int result = std::system("python3 gui_app.py 2>/dev/null");
         if (result != 0) {
-            std::cout << "[WARN] GUI launch failed, showing usage:\n";
-            print_usage();
+            // Fallback to simple uploader
+            result = std::system("python3 image_upload.py 2>/dev/null");
+            if (result != 0) {
+                std::cout << "⚠️  GUI unavailable. Showing command-line usage:\n";
+                print_usage();
+            }
         }
         return 0;
     }
@@ -69,15 +106,18 @@ int main(int argc, char* argv[]) {
             if (!outfile) throw std::runtime_error("Cannot create output file");
             outfile.write(reinterpret_cast<const char*>(decoded.data()), decoded.size());
             
-            std::cout << "[OK] Message decoded and saved to " << output_file << "\n";
-            std::cout << "     Payload size: " << decoded.size() << " bytes\n";
+            std::cout << "\n🎉 SUCCESS! Message decoded successfully!\n";
+            std::cout << "══════════════════════════════════════════\n";
+            std::cout << "📄 Output file: " << output_file << "\n";
+            std::cout << "📊 Payload size: " << decoded.size() << " bytes\n";
             if (had_error) {
-                std::cout << "     [RECOVERY] Hamming ECC corrected bit errors during decode\n";
+                std::cout << "🛠️  [RECOVERY] Hamming ECC corrected bit errors during decode\n";
             } else {
-                std::cout << "     [CLEAN] No bit errors detected\n";
+                std::cout << "✅ [CLEAN] No bit errors detected - perfect integrity!\n";
             }
+            std::cout << "══════════════════════════════════════════\n\n";
         } catch (const std::exception& e) {
-            std::cerr << "[ERROR] " << e.what() << std::endl;
+            std::cerr << "❌ [ERROR] " << e.what() << std::endl;
             return 2;
         }
     } else if (command == "encode-text") {
@@ -111,13 +151,21 @@ int main(int argc, char* argv[]) {
             lsb_encode(img, encoded);
             write_bmp(argv[3], img);
             
-            std::cout << "[OK] Text message encoded and image saved to " << argv[3] << "\n";
-            std::cout << "     Original message: " << message.size() << " bytes\n";
-            std::cout << "     With Hamming ECC: " << encoded.size() << " bytes\n";
-            std::cout << "     Image capacity: " << lsb_capacity(img) << " bytes\n";
-            std::cout << "     Capacity used: " << (encoded.size() * 100.0 / lsb_capacity(img)) << "%\n";
+            std::cout << "\n🎉 SUCCESS! Text message encoded successfully!\n";
+            std::cout << "═══════════════════════════════════════════════\n";
+            std::cout << "📄 Output image: " << argv[3] << "\n";
+            std::cout << "📝 Original message: " << message.size() << " bytes\n";
+            std::cout << "🔐 With Hamming ECC: " << encoded.size() << " bytes (+" 
+                      << ((encoded.size() - message.size()) * 100.0 / message.size()) << "% overhead)\n";
+            std::cout << "📊 Image capacity: " << lsb_capacity(img) << " bytes\n";
+            std::cout << "💾 Capacity used: " << std::fixed << std::setprecision(1) 
+                      << (encoded.size() * 100.0 / lsb_capacity(img)) << "%\n";
+            if (!passphrase.empty()) {
+                std::cout << "🔒 Passphrase protection: ENABLED\n";
+            }
+            std::cout << "═══════════════════════════════════════════════\n\n";
         } catch (const std::exception& e) {
-            std::cerr << "[ERROR] " << e.what() << std::endl;
+            std::cerr << "❌ [ERROR] " << e.what() << std::endl;
             return 2;
         }
     } else if (command == "encode") {
@@ -153,13 +201,21 @@ int main(int argc, char* argv[]) {
             lsb_encode(img, encoded);
             write_bmp(argv[3], img);
             
-            std::cout << "[OK] File message encoded and image saved to " << argv[3] << "\n";
-            std::cout << "     Original file: " << message.size() << " bytes\n";
-            std::cout << "     With Hamming ECC: " << encoded.size() << " bytes\n";
-            std::cout << "     Image capacity: " << lsb_capacity(img) << " bytes\n";
-            std::cout << "     Capacity used: " << (encoded.size() * 100.0 / lsb_capacity(img)) << "%\n";
+            std::cout << "\n🎉 SUCCESS! File message encoded successfully!\n";
+            std::cout << "══════════════════════════════════════════════\n";
+            std::cout << "📄 Output image: " << argv[3] << "\n";
+            std::cout << "📁 Original file: " << message.size() << " bytes\n";
+            std::cout << "🔐 With Hamming ECC: " << encoded.size() << " bytes (+" 
+                      << ((encoded.size() - message.size()) * 100.0 / message.size()) << "% overhead)\n";
+            std::cout << "📊 Image capacity: " << lsb_capacity(img) << " bytes\n";
+            std::cout << "💾 Capacity used: " << std::fixed << std::setprecision(1) 
+                      << (encoded.size() * 100.0 / lsb_capacity(img)) << "%\n";
+            if (!passphrase.empty()) {
+                std::cout << "🔒 Passphrase protection: ENABLED\n";
+            }
+            std::cout << "══════════════════════════════════════════════\n\n";
         } catch (const std::exception& e) {
-            std::cerr << "[ERROR] " << e.what() << std::endl;
+            std::cerr << "❌ [ERROR] " << e.what() << std::endl;
             return 2;
         }
     } else if (command == "capacity") {
@@ -169,9 +225,14 @@ int main(int argc, char* argv[]) {
         }
         try {
             BMPImage img = load_bmp(argv[2]);
-            std::cout << "[OK] Image capacity: " << lsb_capacity(img) << " bytes (excluding 4-byte header)\n";
+            std::cout << "\n📊 IMAGE CAPACITY ANALYSIS\n";
+            std::cout << "═══════════════════════════\n";
+            std::cout << "🎯 Maximum storage: " << lsb_capacity(img) << " bytes (excluding 4-byte header)\n";
+            std::cout << "📝 Approximate words: ~" << (lsb_capacity(img) / 5) << " words (assuming 5 chars/word)\n";
+            std::cout << "📄 Text pages: ~" << (lsb_capacity(img) / 2000) << " pages (assuming 2000 chars/page)\n";
+            std::cout << "═══════════════════════════\n\n";
         } catch (const std::exception& e) {
-            std::cerr << "[ERROR] " << e.what() << std::endl;
+            std::cerr << "❌ [ERROR] " << e.what() << std::endl;
             return 2;
         }
     } else if (command == "info") {
@@ -181,17 +242,23 @@ int main(int argc, char* argv[]) {
         }
         try {
             BMPImage img = load_bmp(argv[2]);
-            std::cout << "[OK] Image info: " << img.width << "x" << img.height << ", " << img.data.size() << " bytes data\n";
-            std::cout << "     LSB capacity: " << lsb_capacity(img) << " bytes (excluding 4-byte header)\n";
+            std::cout << "\n🖼️  IMAGE INFORMATION\n";
+            std::cout << "══════════════════════\n";
+            std::cout << "📐 Dimensions: " << img.width << " × " << img.height << " pixels\n";
+            std::cout << "💾 Data size: " << img.data.size() << " bytes\n";
+            std::cout << "🎯 LSB capacity: " << lsb_capacity(img) << " bytes (excluding header)\n";
+            std::cout << "📊 Storage efficiency: " << std::fixed << std::setprecision(2) 
+                      << (lsb_capacity(img) * 100.0 / img.data.size()) << "% of image data\n";
+            std::cout << "══════════════════════\n\n";
         } catch (const std::exception& e) {
-            std::cerr << "[ERROR] " << e.what() << std::endl;
+            std::cerr << "❌ [ERROR] " << e.what() << std::endl;
             return 2;
         }
     } else if (command == "help") {
         print_usage();
         return 0;
     } else {
-        std::cerr << "[ERROR] Unknown command: " << command << "\n";
+        std::cerr << "❌ [ERROR] Unknown command: '" << command << "'\n\n";
         print_usage();
         return 1;
     }
