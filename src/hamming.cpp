@@ -29,6 +29,7 @@ std::vector<uint8_t> hamming74_encode(const std::vector<uint8_t>& data) {
 
 // Helper: decode a single 7-bit codeword to 4 bits, correct single-bit errors
 uint8_t hamming74_decode_codeword(uint8_t codeword, bool& had_error) {
+    had_error = false; // Initialize error flag
     // Extract bits
     uint8_t p0 = (codeword >> 6) & 1;
     uint8_t p1 = (codeword >> 5) & 1;
@@ -45,27 +46,33 @@ uint8_t hamming74_decode_codeword(uint8_t codeword, bool& had_error) {
     if (syndrome) {
         // Correct single-bit error
         had_error = true;
-        int bit = 7 - syndrome; // 1-based to 0-based
-        codeword ^= (1 << bit);
-        // Re-extract after correction
-        p0 = (codeword >> 6) & 1;
-        p1 = (codeword >> 5) & 1;
-        d3 = (codeword >> 4) & 1;
-        p2 = (codeword >> 3) & 1;
-        d2 = (codeword >> 2) & 1;
-        d1 = (codeword >> 1) & 1;
-        d0 = (codeword >> 0) & 1;
+        // Syndrome to bit position mapping for this Hamming(7,4) implementation
+        static const int syndrome_to_bit[] = {-1, 3, 5, 1, 6, 2, 4, 0}; // index by syndrome
+        int bit = syndrome_to_bit[syndrome];
+        if (bit >= 0 && bit < 7) {
+            codeword ^= (1 << bit);
+            // Re-extract after correction
+            p0 = (codeword >> 6) & 1;
+            p1 = (codeword >> 5) & 1;
+            d3 = (codeword >> 4) & 1;
+            p2 = (codeword >> 3) & 1;
+            d2 = (codeword >> 2) & 1;
+            d1 = (codeword >> 1) & 1;
+            d0 = (codeword >> 0) & 1;
+        }
     }
     return (d3 << 3) | (d2 << 2) | (d1 << 1) | d0;
 }
 
 std::vector<uint8_t> hamming74_decode(const std::vector<uint8_t>& codewords, bool& had_error) {
     std::vector<uint8_t> out;
-    had_error = false;
+    had_error = false; // Initialize error flag
     if (codewords.size() % 2 != 0) throw std::runtime_error("Hamming74: codeword length must be even");
     for (size_t i = 0; i < codewords.size(); i += 2) {
-        uint8_t hi = hamming74_decode_codeword(codewords[i], had_error);
-        uint8_t lo = hamming74_decode_codeword(codewords[i+1], had_error);
+        bool err1 = false, err2 = false;
+        uint8_t hi = hamming74_decode_codeword(codewords[i], err1);
+        uint8_t lo = hamming74_decode_codeword(codewords[i+1], err2);
+        if (err1 || err2) had_error = true;
         out.push_back((hi << 4) | lo);
     }
     return out;

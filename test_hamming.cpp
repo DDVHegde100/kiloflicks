@@ -18,14 +18,16 @@ void test_hamming_encode_decode() {
 void test_hamming_single_bit_error_correction() {
     std::vector<uint8_t> data = {0x55, 0xAA};
     auto encoded = hamming74_encode(data);
-    // Flip one bit in each codeword
+    // Test single-bit error correction for each codeword
     for (size_t i = 0; i < encoded.size(); ++i) {
-        auto corrupted = encoded;
-        corrupted[i] ^= 1 << (i % 7); // flip one bit
-        bool had_error = false;
-        auto decoded = hamming74_decode(corrupted, had_error);
-        assert(decoded == data);
-        assert(had_error);
+        for (int bit = 0; bit < 7; ++bit) {
+            auto corrupted = encoded;
+            corrupted[i] ^= (1 << bit); // flip one bit
+            bool had_error = false;
+            auto decoded = hamming74_decode(corrupted, had_error);
+            assert(decoded == data);
+            assert(had_error);
+        }
     }
     std::cout << "[PASS] Hamming(7,4) single-bit error correction\n";
 }
